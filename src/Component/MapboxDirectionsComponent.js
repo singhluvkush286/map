@@ -17,9 +17,20 @@ const MapboxDirectionsComponent = ({ origin, destination }) => {
   const geolocateControlRef = useRef(null);
   const mapRef = useRef(null);
 
-  const nextInstruction = () => {
+  
+
+  const updateUserLocation = (event) => {
+    const userCoordinates = [event.coords.longitude, event.coords.latitude];
+
     if (currentInstructionIndex < instructions.length - 1) {
-      setCurrentInstructionIndex(currentInstructionIndex + 1);
+      const currentStep = instructions[currentInstructionIndex];
+      const stepCoordinates = currentStep.maneuver.location;
+
+      const distanceToStep = mapRef.current.distance(userCoordinates, stepCoordinates);
+
+      if (distanceToStep < 20) { // Adjust the threshold as needed
+        setCurrentInstructionIndex(currentInstructionIndex + 1);
+      }
     }
   };
 
@@ -29,7 +40,7 @@ const MapboxDirectionsComponent = ({ origin, destination }) => {
       style: 'mapbox://styles/luv21012/clky5i0qg006v01ph6el85bgj',
       center: [80.1223289, 12.9172955],
       zoom: 15,
-      pitch : 30,
+      pitch: 25,
     });
 
     map.addControl(new mapboxgl.NavigationControl());
@@ -52,15 +63,16 @@ const MapboxDirectionsComponent = ({ origin, destination }) => {
   }, []);
 
   const createArrowElement = (color) => {
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('width', '24');
-  svg.setAttribute('height', '24');
-  svg.innerHTML = `
-    <path fill="${color}" d="M0 0h24v24H0z" fill-opacity="0"/>
-    <path d="M12 2c-.14 0-.27.03-.39.08l-.52.23-.65.34-.82.53-.9.68L7 4v16h10V4l-1.72.57-.9-.68-.82-.53-.65-.34-.52-.23C12.27 2.03 12.14 2 12 2zm-2 3.5l1.79 1.03L12 7l1.21-.47L14 5.5l-1-.63-1 .63zm4 11l-3-3v2H9v-2l-3 3 3 3v-2h6v2l3-3zm-3-11.97L12 8.6l-.79-.46-.71-.41V5.53l-.29-.09L11 5l.71-.41L12 4.4l.29.09L13 5v1.66l-.71.41zM13 12v1H9v-1l-1-1v3h6v-3l-1 1zm-1-4v-.66l-.71-.41L11 6.4l-.29.09L10 7V6.52l-.71.41-.71.41-.79.46 1 1 .79.46.71.41V8l.21-.08L12 7.94zm3.44 7.28l.71-.41.71-.41.79-.46-1-1-.79-.46-.71-.41V16l-.21.08L14 16.06v.66l.71.41.71.41.79.46-1-1-.79-.46-.71-.41V17l-.21.08z"/>
-  `;
-  return svg;
-};
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '24');
+    svg.setAttribute('height', '24');
+    svg.innerHTML = `
+      <path fill="${color}" d="M0 0h24v24H0z" fill-opacity="0"/>
+      <path d="M12 2c-.14 0-.27.03-.39.08l-.52.23-.65.34-.82.53-.9.68L7 4v16h10V4l-1.72.57-.9-.68-.82-.53-.65-.34-.52-.23C12.27 2.03 12.14 2 12 2zm-2 3.5l1.79 1.03L12 7l1.21-.47L14 5.5l-1-.63-1 .63zm4 11l-3-3v2H9v-2l-3 3 3 3v-2h6v2l3-3zm-3-11.97L12 8.6l-.79-.46-.71-.41V5.53l-.29-.09L11 5l.71-.41L12 4.4l.29.09L13 5v1.66l-.71.41zM13 12v1H9v-1l-1-1v3h6v-3l-1 1zm-1-4v-.66l-.71-.41L11 6.4l-.29.09L10 7V6.52l-.71.41-.71.41-.79.46 1 1 .79.46.71.41V8l.21-.08L12 7.94zm3.44 7.28l.71-.41.71-.41.79-.46-1-1-.79-.46-.71-.41V16l-.21.08L14 16.06v.66l.71.41.71.41.79.46-1-1-.79-.46-.71-.41V17l-.21.08z"/>
+    `;
+    return svg;
+  };
+  
 
   const drawNavigationLine = (coordinates) => {
     const map = mapRef.current; // Retrieve the map instance from the ref
@@ -93,9 +105,9 @@ const MapboxDirectionsComponent = ({ origin, destination }) => {
 };
 
 
-const handleStartNavigation = () => {
-  setNavigationStarted(true);
-};
+  const handleStartNavigation = () => {
+    setNavigationStarted(true);
+  };
 
   useEffect(() => {
     const map = mapRef.current; // Retrieve the map instance from the ref
@@ -133,6 +145,9 @@ const handleStartNavigation = () => {
               .setLngLat(destination)
               .addTo(map)
               .setPopup(new mapboxgl.Popup().setText('Destination Point'));
+
+            // Initialize instruction display
+            setCurrentInstructionIndex(0);
           } else {
             console.error('Error fetching directions: Invalid API response');
           }
@@ -143,49 +158,58 @@ const handleStartNavigation = () => {
 
       fetchDirections();
     }
-  }, [origin, destination]);
-  // ... (previous code)
 
-return (
-  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-    <div ref={mapContainerRef} style={{ width: '100%', height: '600px', marginBottom: '8px' }} />
+    if (isNavigationStarted) {
+      const geolocateControl = geolocateControlRef.current;
+  
+      const geolocateHandler = () => {
+        navigator.geolocation.watchPosition(updateUserLocation);
+      };
+  
+      geolocateControl.on('geolocate', geolocateHandler);
+  
+      return () => {
+        geolocateControl.off('geolocate', geolocateHandler);
+      };
+    }
+  }, [origin, destination, isNavigationStarted]);
 
-    {/* Display the "Start" button */}
-    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '8px' }}>
-      {!isNavigationStarted && (
-        <button
-          style={{
-            padding: '12px 24px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            color: '#fff',
-            backgroundColor: '#007bff',
-            borderRadius: '8px',
-            border: 'none',
-            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-            cursor: 'pointer',
-          }}
-          onClick={handleStartNavigation}
-        >
-          Start Navigation
-        </button>
+ 
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div ref={mapContainerRef} style={{ width: '100%', height: '600px', marginBottom: '8px' }} />
+
+      {/* Display the "Start" button */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '8px' }}>
+        {!isNavigationStarted && (
+          <button
+            style={{
+              padding: '12px 24px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#fff',
+              backgroundColor: '#007bff',
+              borderRadius: '8px',
+              border: 'none',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+              cursor: 'pointer',
+            }}
+            onClick={handleStartNavigation}
+          >
+            Start Navigation
+          </button>
+        )}
+      </div>
+
+      {/* Display current instruction */}
+      {isNavigationStarted && instructions.length > 0 && (
+        <div style={{ width: '100%', maxWidth: '400px', padding: '10px', border: '1px solid #ccc', marginTop: '8px' }}>
+          <h3>Current Instruction</h3>
+          <p>{instructions[currentInstructionIndex].maneuver.instruction}</p>
+        </div>
       )}
     </div>
-
-    {/* Display directions information */}
-    {isNavigationStarted && instructions.length > 0 && (
-      <div style={{ width: '100%', maxWidth: '400px', padding: '10px', border: '1px solid #ccc', marginTop: '8px' }}>
-        <h3>Step-by-Step Instructions</h3>
-        <ol>
-          {instructions.map((step, index) => (
-            <li key={index}>{step.maneuver.instruction}</li>
-          ))}
-        </ol>
-      </div>
-    )}
-  </div>
-);
-
+  );
 };
 
 export default MapboxDirectionsComponent;
