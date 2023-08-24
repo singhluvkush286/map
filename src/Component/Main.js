@@ -17,19 +17,30 @@ const Main = () => {
 
   ];
 
-  const [origin, setOrigin] = useState('');
+  const [origin, setOrigin] = useState(null); // Store user's current location
   const [destination, setDestination] = useState('');
   const [showMap, setShowMap] = useState(false);
   const [showSearchBox, setShowSearchBox] = useState(true);
-  const [currentLocation, setCurrentLocation] = useState(null); // To store the current location
 
   useEffect(() => {
-    setShowMap(true); // Show the default map when the component mounts
+    // Automatically fetch the user's current location when the component mounts
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLocation = [position.coords.longitude, position.coords.latitude];
+          setOrigin(userLocation);
+          setShowMap(true); // Show the default map when the user location is fetched
+        },
+        (error) => {
+          console.error(error.message);
+          setShowMap(true); // Still show the map even if geolocation fails
+        }
+      );
+    } else {
+      console.error("Geolocation is not supported by this browser.");
+      setShowMap(true); // Still show the map even if geolocation is unsupported
+    }
   }, []);
-
-  function handleOriginChange(event) {
-    setOrigin(event.target.value);
-  }
 
   function handleDestinationChange(event) {
     setDestination(event.target.value);
@@ -38,47 +49,17 @@ const Main = () => {
   const handleSearch = () => {
     setShowSearchBox(false);
 
-    // Find the selected origin and destination objects based on their names
-    const selectedOrigin = initialPlaces.find(place => place.name === origin);
+    // Find the selected destination object based on its name
     const selectedDestination = initialPlaces.find(place => place.name === destination);
 
-    // Pass the coordinates of the selected origin and destination to the MapboxDirections component
-    setOrigin(selectedOrigin.coordinates);
+    // Pass the coordinates of the selected destination to the MapboxDirections component
     setDestination(selectedDestination.coordinates);
-  };
-
-  const handleUserLocationClick = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userLocation = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
-          setOrigin(userLocation);
-        },
-        (error) => {
-          console.error(error.message);
-        }
-      );
-    } else {
-      console.error("Geolocation is not supported by this browser.");
-    }
   };
 
   return (
     <main>
       {showSearchBox && (
         <div className="search-box">
-          <input
-            type="text"
-            list="originOptions"
-            placeholder="Enter origin"
-            onChange={handleOriginChange}
-          />
-          <datalist id="originOptions">
-            {initialPlaces.map((place, index) => (
-              <option key={index} value={place.name} />
-            ))}
-          </datalist>
-          <button onClick={handleUserLocationClick}>Current Location</button>
           <input
             type="text"
             list="destinationOptions"
@@ -110,4 +91,3 @@ const Main = () => {
 };
 
 export default Main;
-
