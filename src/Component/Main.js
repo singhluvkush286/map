@@ -14,7 +14,6 @@ const Main = () => {
     { name: "IBC", coordinates: [80.1189707, 12.918309] },
     { name: "Pavilion", coordinates: [80.1168207, 12.9192925] },
     { name: "Heber Chapel", coordinates: [80.1230878, 12.9197962] }
-
   ];
 
   const [origin, setOrigin] = useState(null); // Store user's current location
@@ -86,6 +85,29 @@ const Main = () => {
           />
         </div>
       )}
+
+      {/* Additional information cards */}
+      <div className="college-info-container">
+        <div className="college-info-card">
+          <h2>St. Thomas Hall</h2>
+          <p>The Hall entrance was built in memory of Mr. Alexander Duff Watson, who was a Scottish Missionary.</p>
+<p>The present E-Block is earlier a campus school and also known as St.Thomas’s Annex.</p>
+
+        </div>
+
+        <div className="college-info-card">
+          <h2>Selaiyur Hall</h2>
+          <p>Oldest tree in MCC - skull tree which is located in Selaiyur Hall</p>
+          <p>Moonshadow started in the year 1978-1979</p>
+        </div>
+
+        <div className="college-info-card">
+          <h2>Martin Hall</h2>
+          <p>It is the first & oldest women's hall...</p>
+          <p>The center of the hall is the Palm Tree</p>
+        </div>
+        {/* Add more cards for other colleges if needed */}
+      </div>
     </main>
   );
 };

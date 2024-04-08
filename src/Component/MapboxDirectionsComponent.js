@@ -112,7 +112,7 @@ const MapboxDirectionsComponent = ({ origin, destination }) => {
     geolocateControl.trigger();
 
     // Add markers for starting and destination points
-    // createMarkers();
+    createMarkers();
   };
 
   useEffect(() => {
@@ -128,8 +128,6 @@ const MapboxDirectionsComponent = ({ origin, destination }) => {
 
           const data = await response.json();
           console.log('Directions API Response:', data);
-
-
 
           if (
             data.routes &&
@@ -154,41 +152,8 @@ const MapboxDirectionsComponent = ({ origin, destination }) => {
       };
 
       fetchDirections();
-      createMarkers();
     }
-
-    if (isNavigationStarted) {
-      const geolocateControl = geolocateControlRef.current;
-
-      const geolocateHandler = (position) => {
-        setuserCoordinates([position.coords.latitude, position.coords.longitude]);
-
-        if (currentInstructionIndex < instructions.length - 1) {
-          const currentStep = instructions[currentInstructionIndex];
-          const stepCoordinates = currentStep.maneuver.location;
-
-          const from = point([userCoordinates[1], userCoordinates[0]]);
-          const to = point([stepCoordinates[1], stepCoordinates[0]]);
-          const distanceToStep = distance(from, to);
-
-          console.log('Distance between user and step: ' + distanceToStep);
-
-          if (distanceToStep < 20) {
-            setCurrentInstructionIndex(currentInstructionIndex + 1);
-          }
-        } else {
-          // All instructions completed, remove the navigation line
-          removeNavigationLine();
-        }
-      };
-
-      geolocateControl.on('geolocate', geolocateHandler);
-
-      return () => {
-        geolocateControl.off('geolocate', geolocateHandler);
-      };
-    }
-  }, [origin, destination, isNavigationStarted, userCoordinates, instructions, currentInstructionIndex]);
+  }, [origin, destination]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -215,10 +180,14 @@ const MapboxDirectionsComponent = ({ origin, destination }) => {
           </button>
         )}
       </div>
-      {isNavigationStarted && instructions.length > 0 && (
+      {instructions.length > 0 && (
         <div style={{ width: '100%', maxWidth: '400px', padding: '10px', border: '1px solid #ccc', marginTop: '8px' }}>
-          <h3>Current Instruction</h3>
-          <p>{instructions[currentInstructionIndex].maneuver.instruction}</p>
+          <h3>Directions</h3>
+          <ol>
+            {instructions.map((instruction, index) => (
+              <li key={index}>{instruction.maneuver.instruction}</li>
+            ))}
+          </ol>
         </div>
       )}
     </div>
